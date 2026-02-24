@@ -1,0 +1,59 @@
+---
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Counter Demo — ds-pen</title>
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
+        ></script>
+        <style>
+            body {
+                font-family: system-ui, sans-serif;
+                max-width: 800px;
+                margin: 2rem auto;
+                padding: 0 1rem;
+            }
+            h1 {
+                color: #333;
+            }
+            #counter-output {
+                font-size: 2rem;
+                text-align: center;
+                padding: 2rem;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                margin: 1rem 0;
+            }
+            button {
+                padding: 0.5rem 1rem;
+                font-size: 1rem;
+                cursor: pointer;
+            }
+            a {
+                color: #0066cc;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🔢 Counter Demo</h1>
+        <p>
+            Welcome, <strong>{{.Username}}</strong>! Each click advances through
+            a sequence of SSE responses.
+        </p>
+
+        <button data-on:click="@get('/home/counter/step/')">Next Step</button>
+        <div id="counter-output">Click "Next Step" to begin</div>
+
+        <h2>Live Counter (looping)</h2>
+        <p>This auto-updates every 2 seconds:</p>
+        <div data-init="@get('/home/counter/live/')"></div>
+        <div id="live-counter">Loading...</div>
+
+        <p><a href="/home/">← Back</a></p>
+    </body>
+</html>

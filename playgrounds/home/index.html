@@ -1,0 +1,43 @@
+---
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ds-pen — Datastar Playground</title>
+    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        h1 { color: #333; }
+        .info { background: #f0f0f0; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+        .info dt { font-weight: bold; }
+        .info dd { margin: 0 0 0.5rem 0; }
+        a { color: #0066cc; }
+        #sse-output { border: 2px solid #ddd; padding: 1rem; border-radius: 8px; margin: 1rem 0; min-height: 3rem; }
+    </style>
+</head>
+<body>
+    <h1>🚀 ds-pen — Datastar Playground</h1>
+    <p>Welcome, <strong>{{.Username}}</strong>!</p>
+
+    <div class="info">
+        <dl>
+            <dt>Session ID</dt><dd>{{.SessionID}}</dd>
+            <dt>Global Hits</dt><dd>{{.GlobalHits}}</dd>
+            <dt>URL Hits</dt><dd>{{.URLHits}}</dd>
+            <dt>Your Hits (this page)</dt><dd>{{.SessionURLHits}}</dd>
+        </dl>
+    </div>
+
+    <h2>Live SSE Demo</h2>
+    <p>Click the button to fetch a greeting via SSE:</p>
+    <button data-on:click="@get('/home/greeting/')">Get Greeting</button>
+    <div id="sse-output">Waiting...</div>
+
+    <h2>Links</h2>
+    <ul>
+        <li><a href="/home/counter/">Counter Demo (sequential SSE)</a></li>
+    </ul>
+</body>
+</html>

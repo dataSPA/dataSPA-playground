@@ -1,0 +1,5 @@
+---
+loop: false
+interval: 0
+---
+<div id="sse-output">Hello, <strong>{{.Username}}</strong>! Visits: {{.SessionURLHits}} (Global: {{.GlobalHits}}){{if .Signals.tab_id}} | Tab: {{.Signals.tab_id}}{{end}}{{if .Signals.greeting}} | Greeting: {{.Signals.greeting}}{{end}}</div>
