@@ -15,7 +15,7 @@ type SaveOptions struct {
 	Description string
 }
 
-// SavePlayground walks a playground directory, encodes all .html files into
+// SavePlayground walks a playground directory, encodes all files into
 // flat gist filenames, and creates a new GitHub gist. Returns the gist ID and
 // HTML URL.
 func (c *Client) SavePlayground(ctx context.Context, dir string, opts SaveOptions) (gistID string, htmlURL string, err error) {
@@ -26,9 +26,6 @@ func (c *Client) SavePlayground(ctx context.Context, dir string, opts SaveOption
 			return walkErr
 		}
 		if info.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) != ".html" {
 			return nil
 		}
 
@@ -53,7 +50,7 @@ func (c *Client) SavePlayground(ctx context.Context, dir string, opts SaveOption
 	}
 
 	if len(files) == 0 {
-		return "", "", fmt.Errorf("no .html files found in %s", dir)
+		return "", "", fmt.Errorf("no files found in %s", dir)
 	}
 
 	desc := opts.Description

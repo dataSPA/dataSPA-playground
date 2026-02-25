@@ -12,14 +12,14 @@ import (
 
 	"github.com/dataSPA/ds-play/gist"
 	"github.com/dataSPA/ds-play/server"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 //go:embed skeleton
 var skeletonFS embed.FS
 
 func main() {
-	app := &cli.App{
+	app := &cli.Command{
 		Name:  "ds-play",
 		Usage: "Datastar Playground Engine",
 		Flags: []cli.Flag{
@@ -36,11 +36,11 @@ func main() {
 			&cli.StringFlag{
 				Name:    "github-token",
 				Usage:   "GitHub personal access token",
-				EnvVars: []string{"GITHUB_TOKEN"},
+				Sources: cli.EnvVars("GITHUB_TOKEN"),
 			},
 		},
-		Action: func(c *cli.Context) error {
-			return runServe(c, "")
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return runServe(ctx, c, "")
 		},
 		Commands: []*cli.Command{
 			{
@@ -53,8 +53,8 @@ func main() {
 						Usage: "create files even if directory exists and is not empty",
 					},
 				},
-				Action: func(c *cli.Context) error {
-					return runInit(c)
+				Action: func(ctx context.Context, c *cli.Command) error {
+					return runInit(ctx, c)
 				},
 			},
 			{
@@ -62,8 +62,8 @@ func main() {
 				Usage: "Publish the current playground directory to a GitHub gist",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{
-						Name:  "public",
-						Usage: "make the gist public (default: secret)",
+						Name:  "secret",
+						Usage: "make the gist secret (default: public)",
 					},
 					&cli.StringFlag{
 						Name:  "description",
@@ -74,8 +74,8 @@ func main() {
 						Usage: "playground directory to share (default: current directory)",
 					},
 				},
-				Action: func(c *cli.Context) error {
-					return runShare(c)
+				Action: func(ctx context.Context, c *cli.Command) error {
+					return runShare(ctx, c)
 				},
 			},
 			{
@@ -92,19 +92,19 @@ func main() {
 						Usage: "directory to clone gist into (default: current directory)",
 					},
 				},
-				Action: func(c *cli.Context) error {
-					return runServe(c, c.Args().First())
+				Action: func(ctx context.Context, c *cli.Command) error {
+					return runServe(ctx, c, c.Args().First())
 				},
 			},
 		},
 	}
 
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func runInit(c *cli.Context) error {
+func runInit(ctx context.Context, c *cli.Command) error {
 	var targetDir string
 	var err error
 	force := c.Bool("force")
@@ -189,7 +189,7 @@ func runInit(c *cli.Context) error {
 	return nil
 }
 
-func runShare(c *cli.Context) error {
+func runShare(ctx context.Context, c *cli.Command) error {
 	token := c.String("github-token")
 	if token == "" {
 		return fmt.Errorf("share requires a GitHub token (--github-token or GITHUB_TOKEN)")
@@ -205,8 +205,8 @@ func runShare(c *cli.Context) error {
 	}
 
 	gc := gist.NewClient(token)
-	id, htmlURL, err := gc.SavePlayground(context.Background(), dir, gist.SaveOptions{
-		Public:      c.Bool("public"),
+	_, htmlURL, err := gc.SavePlayground(context.Background(), dir, gist.SaveOptions{
+		Public:      !c.Bool("secret"),
 		Description: c.String("description"),
 	})
 	if err != nil {
@@ -214,12 +214,12 @@ func runShare(c *cli.Context) error {
 	}
 
 	fmt.Printf("Gist created: %s\n", htmlURL)
-	fmt.Printf("Serve with:   ds-play serve %s\n", id)
+	fmt.Printf("Serve with:   ds-play serve %s\n", htmlURL)
 	return nil
 }
 
-func runServe(c *cli.Context, source string) error {
-	playgroundsDir, tempDir, err := resolveSource(c, source)
+func runServe(ctx context.Context, c *cli.Command, source string) error {
+	playgroundsDir, tempDir, err := resolveSource(ctx, c, source)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func runServe(c *cli.Context, source string) error {
 	return server.Run(cfg)
 }
 
-func resolveSource(c *cli.Context, source string) (playgroundsDir, tempDir string, err error) {
+func resolveSource(ctx context.Context, c *cli.Command, source string) (playgroundsDir, tempDir string, err error) {
 	if source == "" {
 		wd, err := os.Getwd()
 		if err != nil {
@@ -251,7 +251,7 @@ func resolveSource(c *cli.Context, source string) (playgroundsDir, tempDir strin
 	}
 
 	if isGistSource(source) {
-		return resolveGistSource(c, source)
+		return resolveGistSource(ctx, c, source)
 	}
 
 	abs, err := filepath.Abs(source)
@@ -265,11 +265,10 @@ func isGistSource(source string) bool {
 	return strings.Contains(source, "gist.github.com")
 }
 
-func resolveGistSource(c *cli.Context, source string) (playgroundsDir, tempDir string, err error) {
+func resolveGistSource(ctx context.Context, c *cli.Command, source string) (playgroundsDir, tempDir string, err error) {
 	token := c.String("github-token")
 	gistID := gist.ParseGistID(source)
 	gc := gist.NewClient(token)
-	ctx := context.Background()
 
 	if c.Bool("clone") {
 		dest := c.String("clone-dir")
