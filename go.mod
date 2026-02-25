@@ -4,10 +4,13 @@ go 1.26.0
 
 require (
 	github.com/go-chi/chi/v5 v5.2.5
+	github.com/google/go-github/v68 v68.0.0
 	github.com/gorilla/sessions v1.4.0
+	github.com/jferrl/go-githubauth v1.5.1
 	github.com/nats-io/nats-server/v2 v2.12.4
 	github.com/nats-io/nats.go v1.49.0
 	github.com/starfederation/datastar-go v1.1.0
+	golang.org/x/oauth2 v0.35.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -15,6 +18,8 @@ require (
 	github.com/CAFxX/httpcompression v0.0.9 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/antithesishq/antithesis-sdk-go v0.5.0-default-no-op // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/klauspost/compress v1.18.3 // indirect
