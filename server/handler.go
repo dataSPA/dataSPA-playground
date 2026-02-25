@@ -53,7 +53,7 @@ func (h *Handler) TestFunc(w http.ResponseWriter, r *http.Request) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ds-pen — Datastar Playground</title>
+    <title>ds-play — Datastar Playground</title>
     <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"></script>
     <style>
         body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
@@ -66,7 +66,7 @@ func (h *Handler) TestFunc(w http.ResponseWriter, r *http.Request) {
     </style>
 </head>
 <body>
-    <h1>🚀 ds-pen — Datastar Playground</h1>
+    <h1>🚀 ds-play — Datastar Playground</h1>
     <p id="time">Initial time</p>
     <div data-init="@get('/test/')"></div>
 </body>

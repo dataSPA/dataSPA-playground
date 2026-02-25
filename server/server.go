@@ -37,7 +37,7 @@ func Run(cfg Config) error {
 	r.HandleFunc("/*", handler.ServePlayground)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	log.Printf("ds-pen listening on http://localhost%s", addr)
+	log.Printf("ds-play listening on http://localhost%s", addr)
 	log.Printf("Serving playgrounds from: %s", cfg.PlaygroundsDir)
 	return http.ListenAndServe(addr, r)
 }

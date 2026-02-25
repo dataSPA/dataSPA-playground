@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/felixingram/ds-pen/gist"
-	"github.com/felixingram/ds-pen/server"
+	"github.com/dataSPA/ds-play/gist"
+	"github.com/dataSPA/ds-play/server"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,7 +20,7 @@ var skeletonFS embed.FS
 
 func main() {
 	app := &cli.App{
-		Name:  "ds-pen",
+		Name:  "ds-play",
 		Usage: "Datastar Playground Engine",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
@@ -30,7 +30,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "secret",
-				Value: "ds-pen-dev-secret-change-me",
+				Value: "ds-play-dev-secret-change-me",
 				Usage: "session cookie secret",
 			},
 			&cli.StringFlag{
@@ -182,9 +182,9 @@ func runInit(c *cli.Context) error {
 	fmt.Printf("Created skeleton playground at %s\n", targetDir)
 	if c.Args().Len() > 0 {
 		// If a specific directory was provided, show how to serve it
-		fmt.Printf("Run 'ds-pen serve %s' to serve it.\n", targetDir)
+		fmt.Printf("Run 'ds-play serve %s' to serve it.\n", targetDir)
 	} else {
-		fmt.Println("Run 'ds-pen' to serve it.")
+		fmt.Println("Run 'ds-play' to serve it.")
 	}
 	return nil
 }
@@ -214,7 +214,7 @@ func runShare(c *cli.Context) error {
 	}
 
 	fmt.Printf("Gist created: %s\n", htmlURL)
-	fmt.Printf("Serve with:   ds-pen serve %s\n", id)
+	fmt.Printf("Serve with:   ds-play serve %s\n", id)
 	return nil
 }
 

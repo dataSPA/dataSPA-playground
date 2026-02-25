@@ -58,7 +58,7 @@ func (c *Client) SavePlayground(ctx context.Context, dir string, opts SaveOption
 
 	desc := opts.Description
 	if desc == "" {
-		desc = "ds-pen playground"
+		desc = "ds-play playground"
 	}
 
 	g := &github.Gist{

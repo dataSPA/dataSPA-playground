@@ -1,4 +1,4 @@
-module github.com/felixingram/ds-pen
+module github.com/dataSPA/ds-play
 
 go 1.26.0
 

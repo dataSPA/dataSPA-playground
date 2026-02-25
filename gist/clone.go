@@ -28,7 +28,7 @@ func (c *Client) ClonePlayground(ctx context.Context, gistID string, destDir str
 	}
 
 	// Clone into a temp dir first, then reorganize into destDir
-	tmpClone, err := os.MkdirTemp("", "ds-pen-clone-*")
+	tmpClone, err := os.MkdirTemp("", "ds-play-clone-*")
 	if err != nil {
 		return fmt.Errorf("creating temp clone dir: %w", err)
 	}

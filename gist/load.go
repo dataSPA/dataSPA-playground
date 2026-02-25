@@ -46,7 +46,7 @@ func (c *Client) LoadToTempDir(ctx context.Context, gistID string) (string, erro
 		return "", err
 	}
 
-	tmpDir, err := os.MkdirTemp("", "ds-pen-gist-*")
+	tmpDir, err := os.MkdirTemp("", "ds-play-gist-*")
 	if err != nil {
 		return "", fmt.Errorf("creating temp dir: %w", err)
 	}

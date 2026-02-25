@@ -16,7 +16,7 @@ func init() {
 }
 
 const (
-	sessionName    = "ds-pen"
+	sessionName    = "ds-play"
 	sessionMaxAge  = 3600 // 1 hour in seconds
 	keyUsername    = "username"
 	keySessionID  = "session_id"
