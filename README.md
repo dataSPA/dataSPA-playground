@@ -7,26 +7,21 @@ A single Go binary that serves interactive Datastar playgrounds with file-based 
 ## Features
 
 - **File-based routing**: Directory structure maps directly to URL paths
-- **Hot-reloadable templates**: No recompile needed when you edit files
-- **SSE support**: Built-in Server-Sent Events via the Datastar Go SDK
-- **Session management**: Cookie-based sessions with per-session state tracking
-- **Sequential responses**: Multi-step SSE sequences with per-session progress
-- **Looping SSE**: Interval-based response cycling for real-time updates
-- **NATS messaging**: In-process message bus for cross-session communication
+- **SSE support**: Create a sequence of SSE events or loop a particular template
 - **Template variables**: Access to session data, hit counters, and request context
 
 ## Installation
 
 ```bash
-go install github.com/dataSPA/ds-play@latest
+go install github.com/dataSPA/dataSPA-playground@latest
 ```
 
 Or clone and build:
 
 ```bash
-git clone https://github.com/dataSPA/ds-play
-cd ds-play
-go build -o ds-play
+git clone https://github.com/dataSPA/dataSPA-playground
+cd dataSPA-playground
+go build -o dsplay
 ```
 
 ## Quick Start
@@ -34,7 +29,7 @@ go build -o ds-play
 ### 1. Create a new playground
 
 ```bash
-ds-play init my-playground
+dsplay init my-playground
 cd my-playground
 ```
 
@@ -43,7 +38,7 @@ This creates a skeleton directory structure with example files.
 ### 2. Serve it locally
 
 ```bash
-ds-play
+dsplay
 ```
 
 The playground is now available at `http://localhost:8080`.
@@ -51,13 +46,13 @@ The playground is now available at `http://localhost:8080`.
 ### 3. Share it
 
 ```bash
-ds-play share --github-token YOUR_GITHUB_TOKEN --description "My first playground"
+dsplay share --github-token YOUR_GITHUB_TOKEN --description "My first playground"
 ```
 
 This publishes your playground to a GitHub gist. You can then serve it anywhere:
 
 ```bash
-ds-play serve <gist-id>
+dsplay serve <gist-id>
 ```
 
 ## Project Structure
@@ -165,7 +160,7 @@ All templates have access to:
 
 When a request does **not** include the `datastar-request` header, the server renders the template as HTML:
 
-- Looks for: `{name}.html` or `{name}_{method}.html`
+- Looks for: `{url}/index.html` or `{url}/{method}.html`
 - Renders with template variables
 - Returns as `text/html`
 - 204 No Content if file is empty
@@ -174,7 +169,7 @@ When a request does **not** include the `datastar-request` header, the server re
 
 When a request includes the `datastar-request` header:
 
-- Looks for: `{name}_sse.html` or `{name}_{method}_sse.html`
+- Looks for: `{url}/sse.html` or `{url}/{method}_sse.html`
 - Renders each section as a Datastar patch element
 - Streams responses via Server-Sent Events
 - Falls back to HTML response if no SSE file exists
@@ -248,7 +243,7 @@ When a non-SSE datastar request completes, it automatically publishes its signal
 ### Default (serve current directory)
 
 ```bash
-ds-play
+dsplay
 ```
 
 Serves the current directory on port 8080.
@@ -256,7 +251,7 @@ Serves the current directory on port 8080.
 ### Options
 
 ```bash
-ds-play [--port 9000] [--secret your-secret] [--github-token TOKEN]
+dsplay [--port 9000] [--secret your-secret] [--github-token TOKEN]
 ```
 
 | Flag | Default | Description |
@@ -272,8 +267,8 @@ ds-play [--port 9000] [--secret your-secret] [--github-token TOKEN]
 Create a new playground skeleton.
 
 ```bash
-ds-play init my-playground
-ds-play init --force   # Overwrite existing files
+dsplay init my-playground
+dsplay init --force   # Overwrite existing files
 ```
 
 #### `serve [directory or gist-id]`
@@ -281,10 +276,10 @@ ds-play init --force   # Overwrite existing files
 Serve a playground.
 
 ```bash
-ds-play serve /path/to/playground
-ds-play serve https://gist.github.com/user/gist-id
-ds-play serve abc123xyz  # Short gist ID
-ds-play serve --clone abc123xyz --clone-dir ./my-copy  # Clone to disk
+dsplay serve /path/to/playground
+dsplay serve https://gist.github.com/user/gist-id
+dsplay serve abc123xyz  # Short gist ID
+dsplay serve --clone abc123xyz --clone-dir ./my-copy  # Clone to disk
 ```
 
 #### `share`
@@ -292,7 +287,7 @@ ds-play serve --clone abc123xyz --clone-dir ./my-copy  # Clone to disk
 Publish current directory to GitHub gists.
 
 ```bash
-ds-play share --github-token $GITHUB_TOKEN --public --description "My playground"
+dsplay share --github-token $GITHUB_TOKEN --public --description "My playground"
 ```
 
 | Flag | Description |
@@ -386,11 +381,11 @@ interval: 1000
 ### Building from Source
 
 ```bash
-git clone https://github.com/dataSPA/ds-play
+git clone https://github.com/dataSPA/dataSPA-playground
 cd ds-play
-go build -o ds-play
-./ds-play init ./playgrounds/test
-./ds-play serve ./playgrounds/test
+go build -o dsplay
+./dsplay init ./playgrounds/test
+./dsplay serve ./playgrounds/test
 ```
 
 ### Testing
