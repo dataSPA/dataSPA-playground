@@ -18,6 +18,7 @@ require (
 	github.com/CAFxX/httpcompression v0.0.9 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/antithesishq/antithesis-sdk-go v0.5.0-default-no-op // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
@@ -28,7 +29,10 @@ require (
 	github.com/nats-io/jwt/v2 v2.8.0 // indirect
 	github.com/nats-io/nkeys v0.4.12 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
