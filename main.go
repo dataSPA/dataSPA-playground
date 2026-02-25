@@ -44,10 +44,17 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "init",
-				Usage: "Create a skeleton playground in the current directory",
+				Name:      "init",
+				Usage:     "Create a skeleton playground in the current directory or a specified directory",
+				ArgsUsage: "[directory]",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "force",
+						Usage: "create files even if directory exists and is not empty",
+					},
+				},
 				Action: func(c *cli.Context) error {
-					return runInit()
+					return runInit(c)
 				},
 			},
 			{
@@ -97,15 +104,56 @@ func main() {
 	}
 }
 
-func runInit() error {
-	wd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
-	}
+func runInit(c *cli.Context) error {
+	var targetDir string
+	var err error
+	force := c.Bool("force")
 
-	// Check if home/index.html already exists before writing anything
-	if _, err := os.Stat(filepath.Join(wd, "home", "index.html")); err == nil {
-		return fmt.Errorf("home/index.html already exists")
+	// Determine target directory
+	if c.Args().Len() > 0 {
+		targetDir = c.Args().Get(0)
+		// Convert to absolute path
+		targetDir, err = filepath.Abs(targetDir)
+		if err != nil {
+			return fmt.Errorf("resolving directory path: %w", err)
+		}
+
+		// Check if directory exists and is not empty (unless force is set)
+		if info, err := os.Stat(targetDir); err == nil {
+			if !info.IsDir() {
+				return fmt.Errorf("%s exists but is not a directory", targetDir)
+			}
+			if !force {
+				// Check if directory is not empty
+				entries, err := os.ReadDir(targetDir)
+				if err != nil {
+					return fmt.Errorf("reading directory: %w", err)
+				}
+				if len(entries) > 0 {
+					return fmt.Errorf("directory %s already exists and is not empty (use --force to override)", targetDir)
+				}
+			}
+		} else if !os.IsNotExist(err) {
+			return fmt.Errorf("checking directory: %w", err)
+		}
+
+		// Create directory if it doesn't exist
+		if err := os.MkdirAll(targetDir, 0o755); err != nil {
+			return fmt.Errorf("creating directory: %w", err)
+		}
+	} else {
+		// Use current working directory
+		targetDir, err = os.Getwd()
+		if err != nil {
+			return fmt.Errorf("getting working directory: %w", err)
+		}
+
+		// Check if home/index.html already exists in current directory (unless force is set)
+		if !force {
+			if _, err := os.Stat(filepath.Join(targetDir, "home", "index.html")); err == nil {
+				return fmt.Errorf("home/index.html already exists (use --force to override)")
+			}
+		}
 	}
 
 	sub, err := fs.Sub(skeletonFS, "skeleton")
@@ -117,7 +165,7 @@ func runInit() error {
 		if walkErr != nil {
 			return walkErr
 		}
-		dest := filepath.Join(wd, path)
+		dest := filepath.Join(targetDir, path)
 		if d.IsDir() {
 			return os.MkdirAll(dest, 0o755)
 		}
@@ -131,8 +179,13 @@ func runInit() error {
 		return fmt.Errorf("writing skeleton files: %w", err)
 	}
 
-	fmt.Printf("Created skeleton playground at %s\n", wd)
-	fmt.Println("Run 'ds-pen' to serve it.")
+	fmt.Printf("Created skeleton playground at %s\n", targetDir)
+	if c.Args().Len() > 0 {
+		// If a specific directory was provided, show how to serve it
+		fmt.Printf("Run 'ds-pen serve %s' to serve it.\n", targetDir)
+	} else {
+		fmt.Println("Run 'ds-pen' to serve it.")
+	}
 	return nil
 }
 
