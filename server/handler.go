@@ -225,6 +225,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 
 	loop := section.frontmatter.Loop
 	interval := section.frontmatter.Interval
+	count := section.frontmatter.Count
 
 	// Advance sequence position before SSE headers flush (for non-looping multi-step)
 	if !(loop && interval > 0) && len(allSections) > 1 {
@@ -276,13 +277,60 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 		loopPos := pos
 		loopIteration := int64(0)
 		messageCount := int64(1) // Count initial message
+
+		// Count mode: track progress through the current file group
+		var groupStart, groupLen, groupTicks int
+		if count > 0 {
+			groupStart = fileGroupStart(allSections, pos)
+			groupLen = fileGroupLen(allSections, groupStart)
+			groupTicks = 1 // initial send counts
+		}
+
 		for {
 			select {
 			case <-r.Context().Done():
 				return
 			case <-ticker.C:
-				loopPos++
-				loopPos = loopPos % len(allSections)
+				if count > 0 {
+					// Check if current file group's loops are exhausted
+					if groupTicks >= count*groupLen {
+						nextStart := groupStart + groupLen
+						if nextStart >= len(allSections) {
+							return // No more files, close connection
+						}
+
+						nextSection := allSections[nextStart]
+						groupStart = nextStart
+						groupLen = fileGroupLen(allSections, nextStart)
+						count = nextSection.frontmatter.Count
+						groupTicks = 0
+
+						if nextSection.frontmatter.Interval > 0 {
+							ticker.Reset(time.Duration(nextSection.frontmatter.Interval) * time.Millisecond)
+						}
+
+						// If next file doesn't loop, send all its sections once and close
+						if !nextSection.frontmatter.Loop || nextSection.frontmatter.Interval <= 0 {
+							for i := 0; i < groupLen; i++ {
+								loopIteration++
+								messageCount++
+								td.GlobalHits = h.counters.GetGlobalHits()
+								td.URLHits = h.counters.GetURLHits(urlPath)
+								td.SSEMessageCount = messageCount
+								td.LoopIteration = loopIteration
+								if err := h.sendSSESection(sse, allSections, nextStart+i, td); err != nil {
+									return
+								}
+							}
+							return
+						}
+					}
+					loopPos = groupStart + (groupTicks % groupLen)
+					groupTicks++
+				} else {
+					loopPos++
+					loopPos = loopPos % len(allSections)
+				}
 				loopIteration++
 
 				td.GlobalHits = h.counters.GetGlobalHits()
@@ -371,20 +419,45 @@ func (h *Handler) mergeNATSSignals(data []byte, td *TemplateData) {
 type sectionEntry struct {
 	content     string
 	frontmatter Frontmatter
+	fileIndex   int // index of the source file in the files slice
 }
 
 // collectSections flattens files and their sections into a linear sequence.
 func collectSections(files []*ParsedFile) []sectionEntry {
 	var entries []sectionEntry
-	for _, f := range files {
+	for i, f := range files {
 		for _, s := range f.Sections {
 			entries = append(entries, sectionEntry{
 				content:     s,
 				frontmatter: f.Frontmatter,
+				fileIndex:   i,
 			})
 		}
 	}
 	return entries
+}
+
+// fileGroupStart returns the index of the first section belonging to the same file as sections[pos].
+func fileGroupStart(sections []sectionEntry, pos int) int {
+	fi := sections[pos].fileIndex
+	start := pos
+	for start > 0 && sections[start-1].fileIndex == fi {
+		start--
+	}
+	return start
+}
+
+// fileGroupLen returns the number of consecutive sections starting at start that belong to the same file.
+func fileGroupLen(sections []sectionEntry, start int) int {
+	if start >= len(sections) {
+		return 0
+	}
+	fi := sections[start].fileIndex
+	length := 1
+	for start+length < len(sections) && sections[start+length].fileIndex == fi {
+		length++
+	}
+	return length
 }
 
 func (h *Handler) sendSSESection(sse *datastar.ServerSentEventGenerator, sections []sectionEntry, pos int, td TemplateData) error {

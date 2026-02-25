@@ -15,6 +15,7 @@ type Frontmatter struct {
 	Loop     bool `yaml:"loop"`
 	Interval int  `yaml:"interval"` // milliseconds between loop iterations
 	Status   int  `yaml:"status"`   // HTTP status code (0 means use default: 200)
+	Count    int  `yaml:"count"`    // number of loops before advancing to next SSE file (0 = infinite)
 }
 
 // ParsedFile represents a single template file parsed into frontmatter + response sections.
