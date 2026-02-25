@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -31,6 +32,10 @@ func Run(cfg Config) error {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// Static file serving
+	fs := http.FileServer(http.Dir(filepath.Join(cfg.PlaygroundsDir, "static")))
+	r.Handle("/static/*", http.StripPrefix("/static", fs))
 
 	// Catch-all: every request goes through the playground handler
 	r.HandleFunc("/test/", handler.TestFunc)

@@ -7,68 +7,44 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>ds-play Playground</title>
+        <link
+            rel="stylesheet"
+            href="/static/css/pico.fluid.classless.slate.css"
+        />
         <script
             type="module"
             src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
         ></script>
-        <style>
-            body {
-                font-family: system-ui, sans-serif;
-                max-width: 800px;
-                margin: 2rem auto;
-                padding: 0 1rem;
-            }
-            h1 {
-                color: #333;
-            }
-            .card {
-                background: #f0f0f0;
-                padding: 1rem;
-                border-radius: 8px;
-                margin: 1rem 0;
-            }
-            button {
-                padding: 0.5rem 1rem;
-                font-size: 1rem;
-                cursor: pointer;
-                margin-top: 0.5rem;
-            }
-            input[type="text"] {
-                padding: 0.5rem;
-                font-size: 1rem;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                width: 300px;
-            }
-        </style>
         <script
             type="module"
             src="https://cdn.jsdelivr.net/gh/dataSPA/dataSPA-inspector@latest/dataspa-inspector.bundled.js"
         ></script>
     </head>
     <body>
-        <h1>ds-play Playground</h1>
-        <p>Welcome, <strong>{{.Username}}</strong>!</p>
+        <main>
+            <h1>ds-play Playground</h1>
+            <p>Welcome, <strong>{{.Username}}</strong>!</p>
 
-        <div data-signals:message="''" data-init="@get('/')">
-            <div class="card">
-                <h2>Send a Message</h2>
-                <input
-                    type="text"
-                    data-bind:message
-                    placeholder="Type a message..."
-                />
-                <button data-on:click="@post('/action/')">Send</button>
-            </div>
+            <div data-signals:message="''" data-init="@get('/')">
+                <section>
+                    <h2>Send a Message</h2>
+                    <input
+                        type="text"
+                        data-bind:message
+                        placeholder="Type a message..."
+                    />
+                    <button data-on:click="@post('/action/')">Send</button>
+                </section>
 
-            <div id="content" class="card">
-                <h2>Live Updates</h2>
-                <p>SSE Message count: <strong>0</strong></p>
-                <p>Loop counter: <strong>0</strong></p>
-                <p>Global hits counter: <strong>0</strong></p>
-                <p>💬 message: <em>none</em></p>
+                <section id="content">
+                    <h2>Live Updates</h2>
+                    <p>SSE Message count: <strong>0</strong></p>
+                    <p>Loop counter: <strong>0</strong></p>
+                    <p>Global hits counter: <strong>0</strong></p>
+                    <p>💬 message: <em>none</em></p>
+                </section>
             </div>
-        </div>
+        </main>
         <dataspa-inspector></dataspa-inspector>
     </body>
 </html>

@@ -3,7 +3,7 @@ loop: true
 interval: 2000
 ---
 
-<div id="content" class="card">
+<section id="content">
     <h2>Live Updates</h2>
     <p>SSE Message count: <strong>{{.SSEMessageCount}}</strong></p>
     <p>Loop counter: <strong>{{.LoopIteration}}</strong></p>
@@ -12,4 +12,4 @@ interval: 2000
         💬 Message:
         <em>{{if .Signals.message}}{{.Signals.message}}{{else}}none{{end}}</em>
     </p>
-</div>
+</section>
