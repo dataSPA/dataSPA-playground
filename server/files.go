@@ -16,6 +16,7 @@ type Frontmatter struct {
 	Interval int  `yaml:"interval"` // milliseconds between loop iterations
 	Status   int  `yaml:"status"`   // HTTP status code (0 means use default: 200)
 	Count    int  `yaml:"count"`    // number of loops before advancing to next SSE file (0 = infinite)
+	Delay    int  `yaml:"delay"`    // milliseconds between sequential SSE sections (default: 5000)
 }
 
 // ParsedFile represents a single template file parsed into frontmatter + response sections.

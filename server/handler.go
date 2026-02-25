@@ -171,20 +171,20 @@ func (h *Handler) handleHTML(w http.ResponseWriter, r *http.Request, files []*Pa
 func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*ParsedFile, sess *sessions.Session, sd *SessionData, td TemplateData, urlPath string) {
 	allSections := collectSections(files)
 
-	pos := h.sessions.GetSeqPos(sd, urlPath+":sse:"+r.Method)
-	if pos >= len(allSections) {
-		pos = len(allSections) - 1
-	}
-
-	section := allSections[pos]
+	section := allSections[0]
 
 	loop := section.frontmatter.Loop
 	interval := section.frontmatter.Interval
 	count := section.frontmatter.Count
 
-	// Advance sequence position before SSE headers flush (for non-looping multi-step)
-	if !(loop && interval > 0) && len(allSections) > 1 {
-		h.sessions.AdvanceSeqPos(w, r, sess, sd, urlPath+":sse:"+r.Method, len(allSections), loop)
+	// For looping mode, use session position tracking
+	pos := 0
+	if loop && interval > 0 {
+		pos = h.sessions.GetSeqPos(sd, urlPath+":sse:"+r.Method)
+		if pos >= len(allSections) {
+			pos = len(allSections) - 1
+		}
+		section = allSections[pos]
 	}
 
 	// Create SSE writer (flushes headers — no more cookie changes after this)
@@ -311,22 +311,47 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 			}
 		}
 	} else {
-		// Stay open listening for NATS messages
-		messageCount := int64(1) // Count initial message
+		// Sequential mode: send all sections from the beginning with a delay between each.
+		delay := section.frontmatter.Delay
+		if delay <= 0 {
+			delay = 5000 // default 5 seconds
+		}
+
+		messageCount := int64(1)
 		td.SSEMessageCount = messageCount
 		td.LoopIteration = 0
+
+		for i := 1; i < len(allSections); i++ {
+			select {
+			case <-r.Context().Done():
+				return
+			case <-time.After(time.Duration(delay) * time.Millisecond):
+				messageCount++
+				td.GlobalHits = h.counters.GetGlobalHits()
+				td.URLHits = h.counters.GetURLHits(urlPath)
+				td.SSEMessageCount = messageCount
+
+				if err := h.sendSSESection(sse, allSections, i, td); err != nil {
+					return
+				}
+			}
+		}
+
+		// All sections sent — keep connection open for NATS messages
 		for {
 			select {
 			case <-r.Context().Done():
 				return
-				// case msg := <-natsCh:
-				// 	h.mergeNATSSignals(msg.Data, &td)
-				// 	td.GlobalHits = h.counters.GetGlobalHits()
-				// 	td.URLHits = h.counters.GetURLHits(urlPath)
+			case msg := <-natsCh:
+				h.mergeNATSSignals(msg.Data, &td)
+				td.GlobalHits = h.counters.GetGlobalHits()
+				td.URLHits = h.counters.GetURLHits(urlPath)
+				messageCount++
+				td.SSEMessageCount = messageCount
 
-				// 	if err := h.sendSSESection(sse, allSections, pos, td); err != nil {
-				// 		return
-				// 	}
+				if err := h.sendSSESection(sse, allSections, len(allSections)-1, td); err != nil {
+					return
+				}
 			}
 		}
 	}
