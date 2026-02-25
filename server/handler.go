@@ -46,51 +46,6 @@ func NewHandler(playgroundsDir string, counters *Counters, sessions *SessionMana
 	}
 }
 
-func (h *Handler) TestFunc(w http.ResponseWriter, r *http.Request) {
-	log.Printf("datastar req: %v", r.Header.Get("datastar-request") != "")
-	if r.Header.Get("datastar-request") == "" {
-		w.Write([]byte(`
-			<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ds-play — Datastar Playground</title>
-    <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"></script>
-    <style>
-        body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-        h1 { color: #333; }
-        .info { background: #f0f0f0; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
-        .info dt { font-weight: bold; }
-        .info dd { margin: 0 0 0.5rem 0; }
-        a { color: #0066cc; }
-        #sse-output { border: 2px solid #ddd; padding: 1rem; border-radius: 8px; margin: 1rem 0; min-height: 3rem; }
-    </style>
-</head>
-<body>
-    <h1>🚀 ds-play — Datastar Playground</h1>
-    <p id="time">Initial time</p>
-    <div data-init="@get('/test/')"></div>
-</body>
-</html>
-		`))
-	} else {
-		sse := datastar.NewSSE(w, r)
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				now := time.Now().Format(time.RFC3339)
-				// h.sendSSESection(sse, fmt.Sprintf(`<p id="time">{.TIME}</p>`, now))
-				sse.PatchElements(fmt.Sprintf(`<p id="time">%s</p>`, now))
-			case <-r.Context().Done():
-				return
-			}
-		}
-	}
-}
-
 // ServePlayground handles all playground requests.
 func (h *Handler) ServePlayground(w http.ResponseWriter, r *http.Request) {
 	urlPath := r.URL.Path

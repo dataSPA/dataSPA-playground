@@ -38,7 +38,6 @@ func Run(cfg Config) error {
 	r.Handle("/static/*", http.StripPrefix("/static", fs))
 
 	// Catch-all: every request goes through the playground handler
-	r.HandleFunc("/test/", handler.TestFunc)
 	r.HandleFunc("/*", handler.ServePlayground)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
