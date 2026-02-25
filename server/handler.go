@@ -17,14 +17,16 @@ import (
 
 // TemplateData is the data passed to every template.
 type TemplateData struct {
-	GlobalHits     int64
-	URLHits        int64
-	SessionURLHits int64
-	Username       string
-	SessionID      string
-	URL            string
-	Method         string
-	Signals        map[string]any
+	GlobalHits      int64
+	URLHits         int64
+	SessionURLHits  int64
+	Username        string
+	SessionID       string
+	URL             string
+	Method          string
+	Signals         map[string]any
+	SSEMessageCount int64
+	LoopIteration   int64
 }
 
 // Handler handles playground requests.
@@ -272,6 +274,8 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 		defer ticker.Stop()
 
 		loopPos := pos
+		loopIteration := int64(0)
+		messageCount := int64(1) // Count initial message
 		for {
 			select {
 			case <-r.Context().Done():
@@ -279,25 +283,35 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 			case <-ticker.C:
 				loopPos++
 				loopPos = loopPos % len(allSections)
+				loopIteration++
 
 				td.GlobalHits = h.counters.GetGlobalHits()
 				td.URLHits = h.counters.GetURLHits(urlPath)
+				td.SSEMessageCount = messageCount
+				td.LoopIteration = loopIteration
 
 				if err := h.sendSSESection(sse, allSections, loopPos, td); err != nil {
 					return
 				}
+				messageCount++
 			case msg := <-natsCh:
 				h.mergeNATSSignals(msg.Data, &td)
 				td.GlobalHits = h.counters.GetGlobalHits()
 				td.URLHits = h.counters.GetURLHits(urlPath)
+				td.SSEMessageCount = messageCount
+				td.LoopIteration = loopIteration
 
 				if err := h.sendSSESection(sse, allSections, loopPos, td); err != nil {
 					return
 				}
+				messageCount++
 			}
 		}
 	} else {
 		// Stay open listening for NATS messages
+		messageCount := int64(1) // Count initial message
+		td.SSEMessageCount = messageCount
+		td.LoopIteration = 0
 		for {
 			select {
 			case <-r.Context().Done():
