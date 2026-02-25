@@ -382,7 +382,7 @@ interval: 1000
 
 ```bash
 git clone https://github.com/dataSPA/dataSPA-playground
-cd ds-play
+cd dataSPA-playground
 go build -o dsplay
 ./dsplay init ./playgrounds/test
 ./dsplay serve ./playgrounds/test

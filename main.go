@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dataSPA/ds-play/gist"
-	"github.com/dataSPA/ds-play/server"
+	"github.com/dataSPA/dataSPA-playground/gist"
+	"github.com/dataSPA/dataSPA-playground/server"
 	"github.com/urfave/cli/v3"
 )
 
@@ -20,7 +20,7 @@ var skeletonFS embed.FS
 
 func main() {
 	app := &cli.Command{
-		Name:  "ds-play",
+		Name:  "dsplay",
 		Usage: "Datastar Playground Engine",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
@@ -182,9 +182,9 @@ func runInit(ctx context.Context, c *cli.Command) error {
 	fmt.Printf("Created skeleton playground at %s\n", targetDir)
 	if c.Args().Len() > 0 {
 		// If a specific directory was provided, show how to serve it
-		fmt.Printf("Run 'ds-play serve %s' to serve it.\n", targetDir)
+		fmt.Printf("Run 'dsplay serve %s' to serve it.\n", targetDir)
 	} else {
-		fmt.Println("Run 'ds-play' to serve it.")
+		fmt.Println("Run 'dsplay' to serve it.")
 	}
 	return nil
 }
@@ -214,7 +214,7 @@ func runShare(ctx context.Context, c *cli.Command) error {
 	}
 
 	fmt.Printf("Gist created: %s\n", htmlURL)
-	fmt.Printf("Serve with:   ds-play serve %s\n", htmlURL)
+	fmt.Printf("Serve with:   dsplay serve %s\n", htmlURL)
 	return nil
 }
 
@@ -292,5 +292,3 @@ func resolveGistSource(ctx context.Context, c *cli.Command, source string) (play
 	}
 	return tmpDir, tmpDir, nil
 }
-
-

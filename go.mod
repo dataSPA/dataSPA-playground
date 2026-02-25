@@ -1,4 +1,4 @@
-module github.com/dataSPA/ds-play
+module github.com/dataSPA/dataSPA-playground
 
 go 1.26.0
 
