@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	sprig "github.com/go-task/slim-sprig/v3"
 	"github.com/gorilla/sessions"
 	"github.com/nats-io/nats.go"
 	"github.com/starfederation/datastar-go/datastar"
@@ -462,7 +463,7 @@ func (h *Handler) sendSSESection(sse *datastar.ServerSentEventGenerator, section
 }
 
 func renderTemplate(content string, td TemplateData) (string, error) {
-	tmpl, err := template.New("page").Parse(content)
+	tmpl, err := template.New("page").Funcs(sprig.FuncMap()).Parse(content)
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)
 	}
