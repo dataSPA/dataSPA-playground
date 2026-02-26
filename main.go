@@ -38,6 +38,10 @@ func main() {
 				Usage:   "GitHub personal access token",
 				Sources: cli.EnvVars("GITHUB_TOKEN"),
 			},
+			&cli.BoolFlag{
+				Name:  "debug",
+				Usage: "enable debug logging for route resolution, request handling, and template rendering",
+			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			return runServe(ctx, c, "")
@@ -236,6 +240,7 @@ func runServe(ctx context.Context, c *cli.Command, source string) error {
 		Port:           c.Int("port"),
 		PlaygroundsDir: playgroundsDir,
 		SessionSecret:  c.String("secret"),
+		Debug:          c.Bool("debug"),
 	}
 
 	return server.Run(cfg)

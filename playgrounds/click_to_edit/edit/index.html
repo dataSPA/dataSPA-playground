@@ -1,0 +1,40 @@
+<div id="demo">
+    <label>
+        First Name
+        <input
+            type="text"
+            data-bind:first-name
+            data-attr:disabled="$_fetching"
+        />
+    </label>
+    <label>
+        Last Name
+        <input
+            type="text"
+            data-bind:last-name
+            data-attr:disabled="$_fetching"
+        />
+    </label>
+    <label>
+        Email
+        <input type="email" data-bind:email data-attr:disabled="$_fetching" />
+    </label>
+    <div role="group">
+        <button
+            class="success"
+            data-indicator:_fetching
+            data-attr:disabled="$_fetching"
+            data-on:click="@put('/click_to_edit')"
+        >
+            Save
+        </button>
+        <button
+            class="error"
+            data-indicator:_fetching
+            data-attr:disabled="$_fetching"
+            data-on:click="@get('/click_to_edit/cancel')"
+        >
+            Cancel
+        </button>
+    </div>
+</div>

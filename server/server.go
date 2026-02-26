@@ -14,6 +14,7 @@ type Config struct {
 	Port           int
 	PlaygroundsDir string
 	SessionSecret  string
+	Debug          bool
 }
 
 func Run(cfg Config) error {
@@ -27,7 +28,7 @@ func Run(cfg Config) error {
 
 	counters := NewCounters()
 	sessions := NewSessionManager(cfg.SessionSecret)
-	handler := NewHandler(cfg.PlaygroundsDir, counters, sessions, nc)
+	handler := NewHandler(cfg.PlaygroundsDir, counters, sessions, nc, cfg.Debug)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -39,6 +40,35 @@ func Run(cfg Config) error {
 
 	// Catch-all: every request goes through the playground handler
 	r.HandleFunc("/*", handler.ServePlayground)
+
+	if cfg.Debug {
+		routes, err := ScanPlaygrounds(cfg.PlaygroundsDir)
+		if err != nil {
+			log.Printf("[debug] error scanning route table: %v", err)
+		} else {
+			log.Printf("[debug] route table (%d routes):", len(routes))
+			for urlPath, rf := range routes {
+				for method, files := range rf.HTMLFiles {
+					m := method
+					if m == "" {
+						m = "*"
+					}
+					for _, f := range files {
+						log.Printf("[debug]   %s %s → HTML %s (sections=%d, seq=%d)", m, urlPath, f.Path, len(f.Sections), f.SeqIndex)
+					}
+				}
+				for method, files := range rf.SSEFiles {
+					m := method
+					if m == "" {
+						m = "*"
+					}
+					for _, f := range files {
+						log.Printf("[debug]   %s %s → SSE  %s (sections=%d, seq=%d)", m, urlPath, f.Path, len(f.Sections), f.SeqIndex)
+					}
+				}
+			}
+		}
+	}
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Printf("ds-play listening on http://localhost%s", addr)

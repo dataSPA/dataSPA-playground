@@ -28,6 +28,7 @@ type TemplateData struct {
 	Signals         map[string]any
 	SSEMessageCount int64
 	LoopIteration   int64
+	LoopIteration0  int64
 }
 
 // Handler handles playground requests.
@@ -36,14 +37,22 @@ type Handler struct {
 	counters       *Counters
 	sessions       *SessionManager
 	nc             *nats.Conn
+	debug          bool
 }
 
-func NewHandler(playgroundsDir string, counters *Counters, sessions *SessionManager, nc *nats.Conn) *Handler {
+func NewHandler(playgroundsDir string, counters *Counters, sessions *SessionManager, nc *nats.Conn, debug bool) *Handler {
 	return &Handler{
 		playgroundsDir: playgroundsDir,
 		counters:       counters,
 		sessions:       sessions,
 		nc:             nc,
+		debug:          debug,
+	}
+}
+
+func (h *Handler) debugLog(format string, args ...any) {
+	if h.debug {
+		log.Printf("[debug] "+format, args...)
 	}
 }
 
@@ -67,11 +76,13 @@ func (h *Handler) ServePlayground(w http.ResponseWriter, r *http.Request) {
 
 	rf, ok := routes[urlPath]
 	if !ok {
+		h.debugLog("%s %s → no route found (404)", r.Method, urlPath)
 		http.NotFound(w, r)
 		return
 	}
 
 	isDatastarRequest := r.Header.Get("datastar-request") != ""
+	h.debugLog("%s %s datastar=%v", r.Method, urlPath, isDatastarRequest)
 
 	// Read signals from the request (must happen before NewSSE for POST bodies)
 	signals := map[string]any{}
@@ -79,6 +90,7 @@ func (h *Handler) ServePlayground(w http.ResponseWriter, r *http.Request) {
 		if err := datastar.ReadSignals(r, &signals); err != nil {
 			log.Printf("Warning: failed to read signals: %v", err)
 		}
+		h.debugLog("  signals: %v", signals)
 	}
 
 	// Get/create session
@@ -87,6 +99,7 @@ func (h *Handler) ServePlayground(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Session error: %v", err), http.StatusInternalServerError)
 		return
 	}
+	h.debugLog("  session=%s user=%s", sd.SessionID, sd.Username)
 
 	// Bump counters
 	globalHits, urlHits := h.counters.Hit(urlPath)
@@ -101,25 +114,35 @@ func (h *Handler) ServePlayground(w http.ResponseWriter, r *http.Request) {
 		URL:            urlPath,
 		Method:         r.Method,
 		Signals:        signals,
+		LoopIteration:  1,
+		LoopIteration0: 0,
 	}
 
 	// Route to SSE or HTML handler based on datastar-request header
 	if isDatastarRequest {
 		sseFiles := rf.LookupSSE(r.Method)
 		if len(sseFiles) > 0 {
+			h.debugLog("  → SSE handler (%d files)", len(sseFiles))
+			for _, f := range sseFiles {
+				h.debugLog("    file=%s sections=%d seq=%d", f.Path, len(f.Sections), f.SeqIndex)
+			}
 			h.handleSSE(w, r, sseFiles, sess, sd, td, urlPath)
 			return
 		}
-		// No SSE files for this method — fall through to HTML
-		// (Datastar can also handle text/html responses)
+		h.debugLog("  no SSE files for %s, falling through to HTML", r.Method)
 	}
 
 	htmlFiles := rf.LookupHTML(r.Method)
 	if len(htmlFiles) > 0 {
+		h.debugLog("  → HTML handler (%d files)", len(htmlFiles))
+		for _, f := range htmlFiles {
+			h.debugLog("    file=%s sections=%d seq=%d", f.Path, len(f.Sections), f.SeqIndex)
+		}
 		h.handleHTML(w, r, htmlFiles, isDatastarRequest, sess, sd, td, urlPath)
 		return
 	}
 
+	h.debugLog("  → no handler found (404)")
 	http.NotFound(w, r)
 }
 
@@ -130,6 +153,7 @@ func (h *Handler) handleHTML(w http.ResponseWriter, r *http.Request, files []*Pa
 	if pos >= len(allSections) {
 		pos = len(allSections) - 1
 	}
+	h.debugLog("  html: total_sections=%d seq_pos=%d", len(allSections), pos)
 
 	section := allSections[pos]
 
@@ -154,8 +178,11 @@ func (h *Handler) handleHTML(w http.ResponseWriter, r *http.Request, files []*Pa
 		return
 	}
 
+	h.debugLog("  template data: GlobalHits=%d URLHits=%d SessionURLHits=%d Username=%q SessionID=%q URL=%q Method=%q Signals=%v SSEMessageCount=%d LoopIteration=%d",
+		td.GlobalHits, td.URLHits, td.SessionURLHits, td.Username, td.SessionID, td.URL, td.Method, td.Signals, td.SSEMessageCount, td.LoopIteration)
 	rendered, err := renderTemplate(section.content, td)
 	if err != nil {
+		h.debugLog("  html: template error: %v", err)
 		http.Error(w, fmt.Sprintf("Template error: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -164,6 +191,7 @@ func (h *Handler) handleHTML(w http.ResponseWriter, r *http.Request, files []*Pa
 		status = http.StatusOK
 	}
 
+	h.debugLog("  html: responding status=%d len=%d", status, len(rendered))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	w.Write([]byte(rendered))
@@ -177,6 +205,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 	loop := section.frontmatter.Loop
 	interval := section.frontmatter.Interval
 	count := section.frontmatter.Count
+	h.debugLog("  sse: total_sections=%d loop=%v interval=%d count=%d", len(allSections), loop, interval, count)
 
 	// For looping mode, use session position tracking
 	pos := 0
@@ -186,6 +215,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 			pos = len(allSections) - 1
 		}
 		section = allSections[pos]
+		h.debugLog("  sse: loop start pos=%d", pos)
 	}
 
 	// Create SSE writer (flushes headers — no more cookie changes after this)
@@ -231,7 +261,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 		defer ticker.Stop()
 
 		loopPos := pos
-		loopIteration := int64(0)
+		loopIteration := int64(1)
 		messageCount := int64(1) // Count initial message
 
 		// Count mode: track progress through the current file group
@@ -274,6 +304,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 								td.URLHits = h.counters.GetURLHits(urlPath)
 								td.SSEMessageCount = messageCount
 								td.LoopIteration = loopIteration
+								td.LoopIteration0 = loopIteration - 1
 								if err := h.sendSSESection(sse, allSections, nextStart+i, td); err != nil {
 									return
 								}
@@ -293,6 +324,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 				td.URLHits = h.counters.GetURLHits(urlPath)
 				td.SSEMessageCount = messageCount
 				td.LoopIteration = loopIteration
+				td.LoopIteration0 = loopIteration - 1
 
 				if err := h.sendSSESection(sse, allSections, loopPos, td); err != nil {
 					return
@@ -304,6 +336,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 				td.URLHits = h.counters.GetURLHits(urlPath)
 				td.SSEMessageCount = messageCount
 				td.LoopIteration = loopIteration
+				td.LoopIteration0 = loopIteration - 1
 
 				if err := h.sendSSESection(sse, allSections, loopPos, td); err != nil {
 					return
@@ -320,7 +353,8 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 
 		messageCount := int64(1)
 		td.SSEMessageCount = messageCount
-		td.LoopIteration = 0
+		td.LoopIteration = 1
+		td.LoopIteration0 = 0
 
 		for i := 1; i < len(allSections); i++ {
 			select {
@@ -453,6 +487,8 @@ func (h *Handler) sendSSESection(sse *datastar.ServerSentEventGenerator, section
 		return nil
 	}
 
+	h.debugLog("  template data: GlobalHits=%d URLHits=%d SessionURLHits=%d Username=%q SessionID=%q URL=%q Method=%q Signals=%v SSEMessageCount=%d LoopIteration=%d",
+		td.GlobalHits, td.URLHits, td.SessionURLHits, td.Username, td.SessionID, td.URL, td.Method, td.Signals, td.SSEMessageCount, td.LoopIteration)
 	rendered, err := renderTemplate(section.content, td)
 	if err != nil {
 		log.Printf("Template render error: %v", err)

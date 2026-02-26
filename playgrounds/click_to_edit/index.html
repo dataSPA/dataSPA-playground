@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ds-play Playground</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.fluid.classless.slate.min.css"
+        />
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
+        ></script>
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/gh/dataSPA/dataSPA-inspector@latest/dataspa-inspector.bundled.js"
+        ></script>
+    </head>
+    <body>
+        <main data-indicator:_fetching>
+            <h1><a href="/">ds-play Playground</a></h1>
+        </main>
+        <div id="demo">
+            <p>First Name: John</p>
+            <p>Last Name: Doe</p>
+            <p>Email: joe@blow.com</p>
+            <div role="group">
+                <button
+                    class="info"
+                    data-attr:disabled="$_fetching"
+                    data-on:click="@get('/click_to_edit/edit')"
+                >
+                    Edit
+                </button>
+                <button
+                    class="warning"
+                    data-indicator:_fetching
+                    data-attr:disabled="$_fetching"
+                    data-on:click="@patch('/click_to_edit/reset')"
+                >
+                    Reset
+                </button>
+            </div>
+        </div>
+        <dataspa-inspector></dataspa-inspector>
+    </body>
+</html>

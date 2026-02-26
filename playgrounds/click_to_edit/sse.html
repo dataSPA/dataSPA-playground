@@ -1,0 +1,23 @@
+<div id="demo">
+    <p>First Name: {{ .Signals.firstName }}</p>
+    <p>Last Name: {{ .Signals.lastName }}</p>
+    <p>Email: {{ .Signals.email }}</p>
+    <div role="group">
+        <button
+            class="info"
+            data-indicator:_fetching
+            data-attr:disabled="$_fetching"
+            data-on:click="@get('/click_to_edit/edit')"
+        >
+            Edit
+        </button>
+        <button
+            class="warning"
+            data-indicator:_fetching
+            data-attr:disabled="$_fetching"
+            data-on:click="@patch('/click_to_edit/reset')"
+        >
+            Reset
+        </button>
+    </div>
+</div>

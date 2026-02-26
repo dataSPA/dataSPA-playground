@@ -1,0 +1,73 @@
+---
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ds-play Playground</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.fluid.classless.slate.min.css"
+        />
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.0-RC.7/bundles/datastar.js"
+        ></script>
+        <script
+            type="module"
+            src="https://cdn.jsdelivr.net/gh/dataSPA/dataSPA-inspector@latest/dataspa-inspector.bundled.js"
+        ></script>
+    </head>
+    <body>
+        <main>
+            <h1><a href="/">ds-play Playground</a></h1>
+        </main>
+
+        <article>
+            <header data-init="@get('/progress')">Progress Bar</header>
+            <div id="progress-bar">
+                <svg
+                    width="200"
+                    height="200"
+                    viewbox="-25 -25 250 250"
+                    style="transform: rotate(-90deg)"
+                >
+                    <circle
+                        r="90"
+                        cx="100"
+                        cy="100"
+                        fill="transparent"
+                        stroke="#e0e0e0"
+                        stroke-width="16px"
+                        stroke-dasharray="565.48px"
+                        stroke-dashoffset="565px"
+                    ></circle>
+                    <circle
+                        r="90"
+                        cx="100"
+                        cy="100"
+                        fill="transparent"
+                        stroke="#6bdba7"
+                        stroke-width="16px"
+                        stroke-linecap="round"
+                        stroke-dashoffset="565.48px"
+                        stroke-dasharray="565.48px"
+                    ></circle>
+                    <text
+                        x="44px"
+                        y="115px"
+                        fill="#6bdba7"
+                        font-size="52px"
+                        font-weight="bold"
+                        style="transform: rotate(90deg) translate(0px, -196px)"
+                    >
+                        50%
+                    </text>
+                </svg>
+            </div>
+        </article>
+        <dataspa-inspector></dataspa-inspector>
+    </body>
+</html>
