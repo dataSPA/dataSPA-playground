@@ -495,7 +495,12 @@ func (h *Handler) sendSSESection(sse *datastar.ServerSentEventGenerator, section
 		return err
 	}
 
-	return sse.PatchElements(rendered)
+	var opts []datastar.PatchElementOption
+	if section.frontmatter.ViewTransitions {
+		opts = append(opts, datastar.WithViewTransitions())
+	}
+
+	return sse.PatchElements(rendered, opts...)
 }
 
 func renderTemplate(content string, td TemplateData) (string, error) {

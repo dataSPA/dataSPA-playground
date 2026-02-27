@@ -12,11 +12,12 @@ import (
 
 // Frontmatter holds the parsed header of a template file.
 type Frontmatter struct {
-	Loop     bool `yaml:"loop"`
-	Interval int  `yaml:"interval"` // milliseconds between loop iterations
-	Status   int  `yaml:"status"`   // HTTP status code (0 means use default: 200)
-	Count    int  `yaml:"count"`    // number of loops before advancing to next SSE file (0 = infinite)
-	Delay    int  `yaml:"delay"`    // milliseconds between sequential SSE sections (default: 5000)
+	Loop            bool `yaml:"loop"`
+	Interval        int  `yaml:"interval"`         // milliseconds between loop iterations
+	Status          int  `yaml:"status"`            // HTTP status code (0 means use default: 200)
+	Count           int  `yaml:"count"`             // number of loops before advancing to next SSE file (0 = infinite)
+	Delay           int  `yaml:"delay"`             // milliseconds between sequential SSE sections (default: 5000)
+	ViewTransitions bool `yaml:"view-transitions"`  // use datastar useViewTransitions option
 }
 
 // ParsedFile represents a single template file parsed into frontmatter + response sections.

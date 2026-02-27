@@ -2,7 +2,7 @@
 
 ![dataSPA Playground](./playtime.png)
 
-A single Go binary for building and sharing interactive [Datastar](https://data-star.dev) playgrounds. Drop HTML templates into a directory, and `dsplay` turns them into a live server with file-based routing, server-sent events (SSE), session management, and real-time messaging — no build step required.
+A single Go binary for building and sharing interactive [Datastar](https://data-star.dev) (or dataSPA) playgrounds. Drop HTML templates into a directory, and `dsplay` turns them into a live server with file-based routing, server-sent events (SSE), session management, and real-time messaging — no build step required.
 
 Use it to prototype Datastar ideas, share interactive demos, or teach hypermedia concepts with a tool that gets out of your way.
 
@@ -188,7 +188,7 @@ count: 3
 
 ### Real-Time Messaging (NATS)
 
-An embedded NATS server connects HTML handlers to SSE listeners. When a POST handler completes, its signals are automatically published to the session's NATS subject, triggering re-renders on any listening SSE connections. This is how the skeleton demo's "Send" button pushes messages to the live updates section without a page reload.
+An embedded NATS server connects HTML handlers to SSE listeners. When a  handler completes datastar request, its signals are automatically published to the session's NATS subject, triggering re-renders on any listening SSE connections. This is how the skeleton demo's "Send" button pushes messages to the live updates section without a page reload.
 
 ## Command Reference
 
