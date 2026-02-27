@@ -196,7 +196,7 @@ func runInit(ctx context.Context, c *cli.Command) error {
 func runShare(ctx context.Context, c *cli.Command) error {
 	token := c.String("github-token")
 	if token == "" {
-		return fmt.Errorf("share requires a GitHub token (--github-token or GITHUB_TOKEN)")
+		return fmt.Errorf("share requires a GitHub token (--github-token or GITHUB_TOKEN)\nCreate one at https://github.com/settings/personal-access-tokens")
 	}
 
 	dir := c.String("dir")

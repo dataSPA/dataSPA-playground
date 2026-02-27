@@ -1,5 +1,11 @@
+# Possible binaries
 ds-play
 dsplay
-token
-*PLAN.md
 dataSPA-playground
+
+# ssssshhhhhhh......
+token
+
+# Ignore all markdown files except those I want
+*.md
+!README.md

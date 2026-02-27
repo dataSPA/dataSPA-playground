@@ -2,13 +2,9 @@
 
 ![dataSPA Playground](./playtime.png)
 
-A single Go binary that serves interactive Datastar playgrounds with file-based routing, server-sent events (SSE), session management, and real-time messaging.
+A single Go binary for building and sharing interactive [Datastar](https://data-star.dev) playgrounds. Drop HTML templates into a directory, and `dsplay` turns them into a live server with file-based routing, server-sent events (SSE), session management, and real-time messaging — no build step required.
 
-## Features
-
-- **File-based routing**: Directory structure maps directly to URL paths
-- **SSE support**: Create a sequence of SSE events or loop a particular template
-- **Template variables**: Access to session data, hit counters, and request context
+Use it to prototype Datastar ideas, share interactive demos, or teach hypermedia concepts with a tool that gets out of your way.
 
 ## Installation
 
@@ -16,7 +12,7 @@ A single Go binary that serves interactive Datastar playgrounds with file-based 
 go install github.com/dataSPA/dataSPA-playground@latest
 ```
 
-Or clone and build:
+Or build from source:
 
 ```bash
 git clone https://github.com/dataSPA/dataSPA-playground
@@ -24,99 +20,130 @@ cd dataSPA-playground
 go build -o dsplay
 ```
 
-## Quick Start
+## Getting Started
 
-### 1. Create a new playground
+### 1. Create a playground
+
+Use `init` to scaffold a new playground with a working example:
 
 ```bash
 dsplay init my-playground
-cd my-playground
 ```
 
-This creates a skeleton directory structure with example files.
-
-### 2. Serve it locally
-
-```bash
-dsplay
-```
-
-The playground is now available at `http://localhost:8080`.
-
-### 3. Share it
-
-```bash
-dsplay share --github-token YOUR_GITHUB_TOKEN --description "My first playground"
-```
-
-This publishes your playground to a GitHub gist. You can then serve it anywhere:
-
-```bash
-dsplay serve <gist-id>
-```
-
-## Project Structure
-
-Each playground is a directory tree where:
-- **Directories** become URL paths
-- **Special filenames** define handlers
-
-### Well-Known Filenames
-
-| Filename | Behavior |
-|----------|----------|
-| `index.html` | Default HTML handler (all methods) |
-| `get.html` | GET-only HTML handler |
-| `post.html` | POST-only HTML handler |
-| `sse.html` | SSE handler (responds to Datastar signals) |
-| `get_sse.html` | GET-only SSE handler |
-| `post_sse.html` | POST-only SSE handler |
-| `sse_001.html` | Sequential SSE file #1 |
-| `index_001.html` | Sequential HTML file #1 |
-
-### Example Structure
+This creates a `my-playground/` directory containing a ready-to-run demo with an HTML page, an SSE handler, and a POST action:
 
 ```
 my-playground/
-├── home/
-│   ├── index.html           → GET /home/
-│   ├── greeting/
-│   │   └── sse.html         → GET /home/greeting/ (SSE)
-│   ├── action/
-│   │   └── post.html        → POST /home/action/
-│   └── counter/
-│       ├── index.html       → GET /home/counter/
-│       └── step/
-│           ├── sse_001.html → Step 1 of sequence
-│           └── sse_002.html → Step 2 of sequence
+├── index.html        ← landing page (served at /)
+├── sse.html          ← live-updating SSE handler
+├── action/
+│   └── post.html     ← POST handler for /action/
+└── static/
+    └── css/
 ```
 
-## File Format
+### 2. Serve it
 
-Each template file consists of optional **frontmatter** followed by a **template body**:
-
+```bash
+dsplay serve my-playground
 ```
+
+Open `http://localhost:8080` in your browser. You'll see a page with a text input, a send button, and a live-updating section powered by SSE. Type a message, hit send, and watch it appear in the live updates — no page reload needed.
+
+Edit any file in `my-playground/` and refresh your browser to see changes instantly. Templates are read from disk on every request, so there's no rebuild or restart cycle.
+
+### 3. Share it
+
+When you're happy with your playground, publish it as a GitHub Gist:
+
+```bash
+cd my-playground
+dsplay share --description "My first playground"
+```
+
+This requires a GitHub personal access token with **gist** scope. You can create one at https://github.com/settings/personal-access-tokens and provide it via the `GITHUB_TOKEN` environment variable or the `--github-token` flag:
+
+```bash
+export GITHUB_TOKEN=ghp_your_token_here
+dsplay share --description "My first playground"
+```
+
+The command prints the gist URL and a serve command. Anyone with `dsplay` can now run your playground directly from the gist:
+
+```bash
+dsplay serve https://gist.github.com/you/abc123xyz
+```
+
+The playground is fetched into memory and served locally — no clone needed. To save a local copy instead:
+
+```bash
+dsplay serve --clone https://gist.github.com/you/abc123xyz --clone-dir ./local-copy
+```
+
+## How It Works
+
+### File-Based Routing
+
+Your directory structure *is* your routing table. Directories become URL paths, and filenames determine the handler type and HTTP method:
+
+| Filename | Behaviour |
+|----------|-----------|
+| `index.html` | HTML handler (all methods) |
+| `get.html` | GET-only HTML handler |
+| `post.html` | POST-only HTML handler |
+| `sse.html` | SSE handler (all methods) |
+| `get_sse.html` | GET-only SSE handler |
+| `post_sse.html` | POST-only SSE handler |
+| `sse_001.html`, `sse_002.html` | Numbered sequence (SSE) |
+| `index_001.html`, `index_002.html` | Numbered sequence (HTML) |
+
+When a request includes the `datastar-request` header, the server looks for an SSE file first. Otherwise it serves HTML.
+
+### Templates
+
+Every file is a Go `html/template` with optional YAML frontmatter:
+
+```html
 ---
 status: 200
-loop: false
-interval: 1000
+loop: true
+interval: 2000
 ---
-<div id="greeting">Hello, {{.Username}}!</div>
+<div id="clock">Hits: {{.GlobalHits}}</div>
 ```
 
-### Frontmatter Options
+**Frontmatter options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `status` | int | 200 | HTTP status code |
-| `loop` | bool | false | Repeat SSE responses (SSE only) |
-| `interval` | int | 0 | Delay between loops in milliseconds (SSE only) |
+| `loop` | bool | false | Repeat SSE responses continuously |
+| `interval` | int | 0 | Delay between loops in ms (SSE only) |
+| `count` | int | 0 | Number of loops before advancing to the next sequential file (0 = infinite, SSE only) |
+| `delay` | int | 5000 | Delay in ms between sequential SSE sections |
+
+**Template variables:**
+
+| Variable | Description |
+|----------|-------------|
+| `{{.Username}}` | Random session username (e.g. "clever-fox-42") |
+| `{{.SessionID}}` | Session identifier |
+| `{{.GlobalHits}}` | Total hits across all URLs |
+| `{{.URLHits}}` | Hits to this URL |
+| `{{.SessionURLHits}}` | Hits to this URL from this session |
+| `{{.URL}}` | Current request path |
+| `{{.Method}}` | HTTP method |
+| `{{.Signals}}` | Datastar signals from the request |
+
+**Template functions:**
+
+The standard Go template functions are available in templates, plus all functions included in [Slim-Sprig](https://sprig.taskfile.dev). For more details, see the slim-sprig docs.
 
 ### Multiple Responses in One File
 
-Separate responses with `===`:
+Separate sections with `===` to send multiple SSE fragments in a single request:
 
-```
+```html
 ---
 loop: false
 ---
@@ -127,275 +154,88 @@ loop: false
 <div id="counter">Count: 3</div>
 ```
 
-Each section is a step in the sequence. With looping enabled, it cycles through all sections.
+### Sequential Files
 
-## Template Variables
+Numbered files progress per-session. The first request gets `sse_001.html`, the second gets `sse_002.html`, and so on:
 
-All templates have access to:
+```
+steps/
+├── sse_001.html  → first request
+├── sse_002.html  → second request
+└── sse_003.html  → third request
+```
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `.GlobalHits` | int64 | Total hits across all URLs |
-| `.URLHits` | int64 | Hits to this specific URL |
-| `.SessionURLHits` | int64 | Hits to this URL from this session |
-| `.Username` | string | Random username for this session |
-| `.SessionID` | string | Session identifier |
-| `.URL` | string | Current request path |
-| `.Method` | string | HTTP method |
-| `.Signals` | map | Datastar signals from the request |
+After the last file, the sequence stops (or loops if `loop: true`).
 
-### Example
+Use `count` to loop a file a fixed number of times before advancing to the next one in the sequence:
 
 ```html
-<div>
-  <h1>Hello {{.Username}}!</h1>
-  <p>You've visited this page {{.SessionURLHits}} times.</p>
-  <p>Total visits: {{.GlobalHits}}</p>
-</div>
-```
-
-## Response Types
-
-### HTML Response
-
-When a request does **not** include the `datastar-request` header, the server renders the template as HTML:
-
-- Looks for: `{url}/index.html` or `{url}/{method}.html`
-- Renders with template variables
-- Returns as `text/html`
-- 204 No Content if file is empty
-
-### SSE Response
-
-When a request includes the `datastar-request` header:
-
-- Looks for: `{url}/sse.html` or `{url}/{method}_sse.html`
-- Renders each section as a Datastar patch element
-- Streams responses via Server-Sent Events
-- Falls back to HTML response if no SSE file exists
-
-## Sequential Responses
-
-Files with numbered suffixes form a sequence that progresses per-session:
-
-```
-counter/
-├── sse_001.html  → shown on first request
-├── sse_002.html  → shown on second request
-└── sse_003.html  → shown on third request
-```
-
-Or combine with in-file sections:
-
-```
-counter/
-├── sse_001.html
-│   Step 1a
-│   ===
-│   Step 1b
-└── sse_002.html
-    Step 2
-```
-
-After the last response, the sequence stops (or loops if `loop: true`).
-
-## Looping SSE
-
-Enable with frontmatter:
-
-```
+<!-- steps/sse_001.html — loops 3 times, then advances to sse_002 -->
 ---
 loop: true
-interval: 2000
+interval: 1000
+count: 3
 ---
-<div id="time">{{now}}</div>
+<div id="progress">Loading...</div>
 ```
 
-The SSE connection stays open and re-sends responses every 2000ms, cycling through all sections, then looping back to the start.
+```html
+<!-- steps/sse_002.html — sent once, then the connection closes -->
+---
+---
+<div id="progress">Done!</div>
+```
 
-## Session Management
+### Real-Time Messaging (NATS)
 
-Sessions are cookie-based with:
+An embedded NATS server connects HTML handlers to SSE listeners. When a POST handler completes, its signals are automatically published to the session's NATS subject, triggering re-renders on any listening SSE connections. This is how the skeleton demo's "Send" button pushes messages to the live updates section without a page reload.
 
-- **Duration**: 1 hour
-- **Tracking**: Per-session counters for each URL
-- **Random username**: Assigned automatically (e.g., "clever-fox-42")
-- **Sequence position**: Each session tracks where it is in multi-step sequences independently
+## Command Reference
 
-## Real-Time Communication (NATS)
+### `dsplay`
 
-Playgrounds have an in-process NATS server. Use it to:
+Serve the current directory on port 8080 (shortcut for `dsplay serve .`).
 
-1. **Send signals from HTML handlers** to listening SSE connections
-2. **Broadcast updates** across sessions or specific browser tabs
+### `dsplay init [directory]`
 
-### NATS Subjects
-
-| Subject | Description |
-|---------|-------------|
-| `dspen.session.<session_id>` | All tabs in a session |
-| `dspen.tab.<tab_id>` | Specific tab (if `tab_id` signal sent) |
-
-When a non-SSE datastar request completes, it automatically publishes its signals to these subjects, triggering re-renders on listening SSE handlers.
-
-## Usage
-
-### Default (serve current directory)
+Create a skeleton playground. Omit the directory to scaffold in the current folder.
 
 ```bash
-dsplay
+dsplay init                    # scaffold in current directory
+dsplay init my-playground      # create my-playground/
+dsplay init --force existing/  # overwrite existing files
 ```
 
-Serves the current directory on port 8080.
+### `dsplay serve [source]`
 
-### Options
+Serve a playground from a local directory or a GitHub Gist.
 
 ```bash
-dsplay [--port 9000] [--secret your-secret] [--github-token TOKEN]
+dsplay serve                                    # serve current directory
+dsplay serve ./my-playground                    # serve a local directory
+dsplay serve https://gist.github.com/user/id   # serve from a gist
+dsplay serve --clone <gist-url>                 # clone gist to disk, then serve
 ```
+
+### `dsplay share`
+
+Publish the current directory as a GitHub Gist.
+
+```bash
+dsplay share --description "Demo playground"
+dsplay share --secret                           # create a secret gist (default is public)
+dsplay share --dir ./other-playground           # share a different directory
+```
+
+### Global Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--port` | 8080 | Port to listen on |
-| `--secret` | dev secret | Session cookie secret (change in production!) |
-| `--github-token` | - | GitHub token (for gist operations) |
-
-### Commands
-
-#### `init [directory]`
-
-Create a new playground skeleton.
-
-```bash
-dsplay init my-playground
-dsplay init --force   # Overwrite existing files
-```
-
-#### `serve [directory or gist-id]`
-
-Serve a playground.
-
-```bash
-dsplay serve /path/to/playground
-dsplay serve https://gist.github.com/user/gist-id
-dsplay serve abc123xyz  # Short gist ID
-dsplay serve --clone abc123xyz --clone-dir ./my-copy  # Clone to disk
-```
-
-#### `share`
-
-Publish current directory to GitHub gists.
-
-```bash
-dsplay share --github-token $GITHUB_TOKEN --public --description "My playground"
-```
-
-| Flag | Description |
-|------|-------------|
-| `--github-token` | Required. GitHub personal access token |
-| `--public` | Make the gist public (default: secret) |
-| `--description` | Gist description |
-| `--dir` | Playground directory (default: current) |
-
-## Architecture
-
-### How Requests Work
-
-1. **Incoming request** → Check for session cookie, create session if needed
-2. **Path matching** → Build file list from directory structure
-3. **File selection** → Pick handler based on method and `datastar-request` header
-4. **Template rendering** → Compile and execute template with session data
-5. **Response** → HTML or SSE depending on headers
-
-### Hot Reloading
-
-Templates are read from disk on every request—no caching. This keeps things simple and development-friendly, at the cost of slightly higher latency per request (negligible for most use cases).
-
-## Tech Stack
-
-- **Router**: [chi/v5](https://github.com/go-chi/chi) – lightweight HTTP router
-- **Sessions**: [gorilla/sessions](https://github.com/gorilla/sessions) – cookie-based sessions
-- **SSE**: [datastar-go](https://github.com/starfederation/datastar-go) – Datastar SDK
-- **Templates**: Go stdlib `html/template`
-- **Messaging**: Embedded [NATS server](https://nats.io/)
-- **GitHub**: [go-github](https://github.com/google/go-github) – Gist API
-
-## Examples
-
-### Static HTML Page
-
-`home/index.html`:
-```html
----
-status: 200
----
-<h1>Welcome {{.Username}}</h1>
-<p>Global hits: {{.GlobalHits}}</p>
-```
-
-### Form Handler
-
-`home/form/post.html`:
-```html
----
-status: 204
----
-```
-
-### Multi-Step Sequence
-
-`home/steps/sse_001.html`:
-```
----
----
-<div id="progress">Step 1 of 3</div>
-```
-
-`home/steps/sse_002.html`:
-```
----
----
-<div id="progress">Step 2 of 3</div>
-```
-
-`home/steps/sse_003.html`:
-```
----
----
-<div id="progress">Step 3 of 3 - Done!</div>
-```
-
-### Looping Live Update
-
-`home/live/sse.html`:
-```
----
-loop: true
-interval: 1000
----
-<div id="clock">{{.URL}} - Hits: {{.URLHits}}</div>
-```
-
-## Development
-
-### Building from Source
-
-```bash
-git clone https://github.com/dataSPA/dataSPA-playground
-cd dataSPA-playground
-go build -o dsplay
-./dsplay init ./playgrounds/test
-./dsplay serve ./playgrounds/test
-```
-
-### Testing
-
-Edit any template file and refresh the browser—no rebuild needed.
+| `--secret` | dev secret | Session cookie secret |
+| `--github-token` | — | GitHub token (or set `GITHUB_TOKEN`) |
+| `--debug` | false | Enable debug logging |
 
 ## License
 
 MIT
-
-## Contributing
-
-Contributions welcome! Open an issue or pull request.
