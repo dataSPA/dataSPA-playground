@@ -12,12 +12,15 @@ import (
 
 // Frontmatter holds the parsed header of a template file.
 type Frontmatter struct {
-	Loop            bool `yaml:"loop"`
-	Interval        int  `yaml:"interval"`         // milliseconds between loop iterations
-	Status          int  `yaml:"status"`            // HTTP status code (0 means use default: 200)
-	Count           int  `yaml:"count"`             // number of loops before advancing to next SSE file (0 = infinite)
-	Delay           int  `yaml:"delay"`             // milliseconds between sequential SSE sections (default: 5000)
-	ViewTransitions bool `yaml:"view-transitions"`  // use datastar useViewTransitions option
+	Loop            bool   `yaml:"loop"`
+	Interval        int    `yaml:"interval"`         // milliseconds between loop iterations
+	Status          int    `yaml:"status"`           // HTTP status code (0 means use default: 200)
+	Count           int    `yaml:"count"`            // number of loops before advancing to next SSE file (0 = infinite)
+	Delay           int    `yaml:"delay"`            // milliseconds between sequential SSE sections (default: 5000)
+	ViewTransitions bool   `yaml:"view-transitions"` // use datastar useViewTransitions option
+	Namespace       string `yaml:"namespace"`        // DOM namespace
+	Mode            string `yaml:"mode"`             // Morph mode
+	Selector        string `yaml:"selector"`         // Selector for target element
 }
 
 // ParsedFile represents a single template file parsed into frontmatter + response sections.
@@ -49,8 +52,10 @@ func (rf *RouteFiles) LookupSSE(method string) []*ParsedFile {
 	return rf.SSEFiles[""]
 }
 
-const frontmatterSeparator = "---"
-const sectionSeparator = "==="
+const (
+	frontmatterSeparator = "---"
+	sectionSeparator     = "==="
+)
 
 // ParseFile reads and parses a template file from disk.
 func ParseFile(path string) (*ParsedFile, error) {
@@ -208,7 +213,6 @@ func ScanPlaygrounds(root string) (map[string]*RouteFiles, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

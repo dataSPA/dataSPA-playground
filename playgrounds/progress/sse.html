@@ -29,7 +29,7 @@ count: 31
             stroke="#6bdba7"
             stroke-width="16px"
             stroke-linecap="round"
-            stroke-dashoffset="{{ sub 565 ( mul (div 565 30) .LoopIteration) }}px"
+            stroke-dashoffset="{{ sub 565 ( mul (div 565 30) .LoopCounter) }}px"
             stroke-dasharray="565.48px"
         ></circle>
         <text
@@ -40,12 +40,12 @@ count: 31
             font-weight="bold"
             style="transform: rotate(90deg) translate(0px, -196px)"
         >
-            {{ if (gt .LoopIteration0 29) }} 100% {{ else }} {{ mul (div 100 30)
-            .LoopIteration }}% {{ end }}
+            {{ if (gt .LoopCounter0 29) }} 100% {{ else }} {{ mul (div 100 30)
+            .LoopCounter }}% {{ end }}
         </text>
     </svg>
 
-    {{ if (gt .LoopIteration 30) }}
+    {{ if (gt .LoopCounter 30) }}
     <div data-on:click="window.location='/progress/'">
         <!-- When progress is 100% -->
         <button>Completed! Try again?</button>

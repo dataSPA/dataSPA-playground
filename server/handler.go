@@ -27,8 +27,8 @@ type TemplateData struct {
 	Method          string
 	Signals         map[string]any
 	SSEMessageCount int64
-	LoopIteration   int64
-	LoopIteration0  int64
+	LoopCounter     int64
+	LoopCounter0    int64
 }
 
 // Handler handles playground requests.
@@ -114,8 +114,8 @@ func (h *Handler) ServePlayground(w http.ResponseWriter, r *http.Request) {
 		URL:            urlPath,
 		Method:         r.Method,
 		Signals:        signals,
-		LoopIteration:  1,
-		LoopIteration0: 0,
+		LoopCounter:    1,
+		LoopCounter0:   0,
 	}
 
 	// Route to SSE or HTML handler based on datastar-request header
@@ -178,8 +178,8 @@ func (h *Handler) handleHTML(w http.ResponseWriter, r *http.Request, files []*Pa
 		return
 	}
 
-	h.debugLog("  template data: GlobalHits=%d URLHits=%d SessionURLHits=%d Username=%q SessionID=%q URL=%q Method=%q Signals=%v SSEMessageCount=%d LoopIteration=%d",
-		td.GlobalHits, td.URLHits, td.SessionURLHits, td.Username, td.SessionID, td.URL, td.Method, td.Signals, td.SSEMessageCount, td.LoopIteration)
+	h.debugLog("  template data: GlobalHits=%d URLHits=%d SessionURLHits=%d Username=%q SessionID=%q URL=%q Method=%q Signals=%v SSEMessageCount=%d LoopCounter=%d",
+		td.GlobalHits, td.URLHits, td.SessionURLHits, td.Username, td.SessionID, td.URL, td.Method, td.Signals, td.SSEMessageCount, td.LoopCounter)
 	rendered, err := renderTemplate(section.content, td)
 	if err != nil {
 		h.debugLog("  html: template error: %v", err)
@@ -261,7 +261,7 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 		defer ticker.Stop()
 
 		loopPos := pos
-		loopIteration := int64(1)
+		loopCounter := int64(1)
 		messageCount := int64(1) // Count initial message
 
 		// Count mode: track progress through the current file group
@@ -298,13 +298,13 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 						// If next file doesn't loop, send all its sections once and close
 						if !nextSection.frontmatter.Loop || nextSection.frontmatter.Interval <= 0 {
 							for i := 0; i < groupLen; i++ {
-								loopIteration++
+								loopCounter++
 								messageCount++
 								td.GlobalHits = h.counters.GetGlobalHits()
 								td.URLHits = h.counters.GetURLHits(urlPath)
 								td.SSEMessageCount = messageCount
-								td.LoopIteration = loopIteration
-								td.LoopIteration0 = loopIteration - 1
+								td.LoopCounter = loopCounter
+								td.LoopCounter = loopCounter - 1
 								if err := h.sendSSESection(sse, allSections, nextStart+i, td); err != nil {
 									return
 								}
@@ -318,13 +318,13 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 					loopPos++
 					loopPos = loopPos % len(allSections)
 				}
-				loopIteration++
+				loopCounter++
 
 				td.GlobalHits = h.counters.GetGlobalHits()
 				td.URLHits = h.counters.GetURLHits(urlPath)
 				td.SSEMessageCount = messageCount
-				td.LoopIteration = loopIteration
-				td.LoopIteration0 = loopIteration - 1
+				td.LoopCounter = loopCounter
+				td.LoopCounter0 = loopCounter - 1
 
 				if err := h.sendSSESection(sse, allSections, loopPos, td); err != nil {
 					return
@@ -335,8 +335,8 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 				td.GlobalHits = h.counters.GetGlobalHits()
 				td.URLHits = h.counters.GetURLHits(urlPath)
 				td.SSEMessageCount = messageCount
-				td.LoopIteration = loopIteration
-				td.LoopIteration0 = loopIteration - 1
+				td.LoopCounter = loopCounter
+				td.LoopCounter0 = loopCounter - 1
 
 				if err := h.sendSSESection(sse, allSections, loopPos, td); err != nil {
 					return
@@ -353,8 +353,8 @@ func (h *Handler) handleSSE(w http.ResponseWriter, r *http.Request, files []*Par
 
 		messageCount := int64(1)
 		td.SSEMessageCount = messageCount
-		td.LoopIteration = 1
-		td.LoopIteration0 = 0
+		td.LoopCounter = 1
+		td.LoopCounter0 = 0
 
 		for i := 1; i < len(allSections); i++ {
 			select {
@@ -487,8 +487,8 @@ func (h *Handler) sendSSESection(sse *datastar.ServerSentEventGenerator, section
 		return nil
 	}
 
-	h.debugLog("  template data: GlobalHits=%d URLHits=%d SessionURLHits=%d Username=%q SessionID=%q URL=%q Method=%q Signals=%v SSEMessageCount=%d LoopIteration=%d",
-		td.GlobalHits, td.URLHits, td.SessionURLHits, td.Username, td.SessionID, td.URL, td.Method, td.Signals, td.SSEMessageCount, td.LoopIteration)
+	h.debugLog("  template data: GlobalHits=%d URLHits=%d SessionURLHits=%d Username=%q SessionID=%q URL=%q Method=%q Signals=%v SSEMessageCount=%d LoopCounter=%d",
+		td.GlobalHits, td.URLHits, td.SessionURLHits, td.Username, td.SessionID, td.URL, td.Method, td.Signals, td.SSEMessageCount, td.LoopCounter)
 	rendered, err := renderTemplate(section.content, td)
 	if err != nil {
 		log.Printf("Template render error: %v", err)
@@ -498,6 +498,40 @@ func (h *Handler) sendSSESection(sse *datastar.ServerSentEventGenerator, section
 	var opts []datastar.PatchElementOption
 	if section.frontmatter.ViewTransitions {
 		opts = append(opts, datastar.WithViewTransitions())
+	}
+
+	if section.frontmatter.Selector != "" {
+		opts = append(opts, datastar.WithSelector(section.frontmatter.Selector))
+	}
+
+	switch section.frontmatter.Mode {
+	case "outer":
+		opts = append(opts, datastar.WithModeOuter())
+	case "inner":
+		opts = append(opts, datastar.WithModeInner())
+	case "replace":
+		opts = append(opts, datastar.WithModeReplace())
+	case "prepend":
+		opts = append(opts, datastar.WithModePrepend())
+	case "append":
+		opts = append(opts, datastar.WithModeAppend())
+	case "before":
+		opts = append(opts, datastar.WithModeBefore())
+	case "after":
+		opts = append(opts, datastar.WithModeAfter())
+	case "remove":
+		opts = append(opts, datastar.WithModeRemove())
+	}
+
+	switch section.frontmatter.Namespace {
+	case "mathml":
+		opts = append(opts, datastar.WithNamespace(datastar.NamespaceMathML))
+	case "html":
+		opts = append(opts, datastar.WithNamespace(datastar.NamespaceHTML))
+	case "svg":
+		opts = append(opts, datastar.WithNamespace(datastar.NamespaceSVG))
+	default:
+		return fmt.Errorf("unsupported namespace: %s", section.frontmatter.Namespace)
 	}
 
 	return sse.PatchElements(rendered, opts...)
