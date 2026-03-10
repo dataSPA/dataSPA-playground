@@ -60,18 +60,23 @@ func (c *Client) ClonePlayground(ctx context.Context, gistID string, destDir str
 		relPath := DecodePath(name)
 
 		srcPath := filepath.Join(tmpClone, name)
-		dstPath := filepath.Join(destDir, filepath.FromSlash(relPath))
+		dstPath := filepath.FromSlash(relPath)
+		dstRoot, err := os.OpenRoot(destDir)
+		if err != nil {
+			return fmt.Errorf("opening root for %s: %w", relPath, err)
+		}
+		defer dstRoot.Close()
 
 		content, err := os.ReadFile(srcPath)
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", name, err)
 		}
 
-		if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
+		if err := dstRoot.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
 			return fmt.Errorf("creating dir for %s: %w", relPath, err)
 		}
 
-		if err := os.WriteFile(dstPath, content, 0o644); err != nil {
+		if err := dstRoot.WriteFile(dstPath, content, 0o644); err != nil {
 			return fmt.Errorf("writing %s: %w", relPath, err)
 		}
 	}
